@@ -7,7 +7,6 @@
     {"name": "ui_design", "category": ["design"], "recommended": true, "default_on": true},
     {"name": "templates", "category": ["writing"], "recommended": true, "default_on": true},
     {"name": "device_voice", "category": ["media"], "recommended": true, "default_on": true},
-    {"name": "browser_speech", "category": ["media"]},
-    {"name": "a2a", "category": ["messaging"]}
+    {"name": "browser_speech", "category": ["media"]}
   ]
 }
