@@ -28,16 +28,7 @@ if TYPE_CHECKING:
 NETWORK_PASSWORD_KEY = "OUROBOROS_NETWORK_PASSWORD"
 AUTH_COOKIE_NAME = "ouroboros_auth"
 _PUBLIC_HTTP_PATHS = {"/api/health", "/auth/login", "/auth/logout"}
-# The ``a2a`` extension skill's namespace is the public Agent2Agent surface:
-# agent-card discovery (GET) is public by A2A convention, and the skill itself
-# enforces its own peer bearer token on every POST. No other skill namespace
-# is reachable without the network password.
-_A2A_PUBLIC_PREFIX = "/api/extensions/a2a"
 _NO_STORE = {"Cache-Control": "no-store"}
-
-
-def _is_a2a_public_path(path: str) -> bool:
-    return path == _A2A_PUBLIC_PREFIX or path.startswith(_A2A_PUBLIC_PREFIX + "/")
 
 
 def resolve_network_password(env_value: str | None, settings_loader) -> str:
@@ -404,7 +395,7 @@ class NetworkAuthGate:
             await self.app(scope, receive, send)
             return
 
-        if scope["type"] == "http" and (path in _PUBLIC_HTTP_PATHS or _is_a2a_public_path(path) or (
+        if scope["type"] == "http" and (path in _PUBLIC_HTTP_PATHS or (
                 (path == "/auth" or path.startswith("/auth/")) and scope.get("method") in {"GET", "HEAD"})):
             await self.app(scope, receive, send)
             return
