@@ -127,6 +127,30 @@ def test_network_auth_gate_accepts_header_and_login_cookie(monkeypatch):
         assert cookie_resp.json() == {"ok": True}
 
 
+def _make_a2a_client(monkeypatch, password: str = "secret") -> TestClient:
+    monkeypatch.setattr(server_auth, "get_configured_network_password", lambda: password)
+    app = server_auth.NetworkAuthGate(Starlette(routes=[
+        Route("/api/extensions/a2a/.well-known/agent-card.json", endpoint=_ok),
+        Route("/api/extensions/a2a/rpc", endpoint=_ok, methods=["POST"]),
+        Route("/api/extensions/anything-else/rpc", endpoint=_ok, methods=["POST"]),
+    ]))
+    return TestClient(app)
+
+
+def test_network_auth_gate_leaves_the_a2a_skill_namespace_public(monkeypatch):
+    with _make_a2a_client(monkeypatch) as client:
+        assert client.get("/api/extensions/a2a/.well-known/agent-card.json").status_code == 200
+        # POSTs pass the gate too; the skill enforces its own peer bearer token.
+        assert client.post("/api/extensions/a2a/rpc", json={}).status_code == 200
+        # The base path without a trailing slash is covered as well.
+        assert client.get("/api/extensions/a2a").status_code in {200, 404}
+        # Other skill namespaces stay gated.
+        other = client.post("/api/extensions/anything-else/rpc", json={})
+        assert other.status_code == 401
+        # A lookalike prefix must not escape the gate.
+        assert client.get("/api/extensions/a2a-evil/rpc").status_code == 401
+
+
 def test_login_next_url_is_escaped(monkeypatch):
     with _make_client(monkeypatch) as client:
         resp = client.get('/auth/login?next=/"><script>alert(1)</script>', follow_redirects=False)
